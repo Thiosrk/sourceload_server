@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration debug="false" scan="true" scanPeriod="30 seconds" >
+
+    <!--logback 不需要DTD 文件,节点不区分大小写-->
+
+    <!--设置变量-->
+    <!--项目名称-->
+    <property scope="context" name="APP_NAME" value="SourceLoad"/>
+    <!--日志文件输出路径-->
+    <!--<property scope="context" name="LOG_FILE_PATH" value="/opt/applog/${APP_NAME}/log" />-->
+
+    <!-- 彩色日志依赖的渲染类 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+    <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
+    <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
+    <!-- 彩色日志格式 -->
+    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+
+    <!--设置上下文名称-->
+    <contextName>${APP_NAME}</contextName>
+
+    <!-- Appender 有两个属性name 和class可以配置
+         name属性指定appender的名称，而class属性指定要实例化的appender类的完全限定名称
+        <appender>元素可以包含零个或一个<layout>元素，零个或多个<encoder>元素以及零个或多个<filter>元素。 -->
+
+    <!-- 负责写日志,控制台日志 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+        <!--
+        <encoder>
+        默认使用 ch.qos.logback.classic.encoder.PatternLayoutEncoder 实现类
+        如果使用自定义类，则需要指定完全限定名称
+        如下所示:
+        <encoder class="com.xingun.custom.MyPatternLayoutEncoder">
+          -->
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--配置控制台输出格式，由于是控制台，我这里调成了日志高亮显示 -->
+            <!--<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>-->
+            <Pattern>${CONSOLE_LOG_PATTERN}</Pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 文件日志 -->
+    <appender name="DEBUG" class="ch.qos.logback.core.FileAppender">
+        <file>debug.log</file>
+        <!-- append: true,日志被追加到文件结尾; false,清空现存文件;默认是true -->
+        <append>true</append>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <!-- LevelFilter: 级别过滤器，根据日志级别进行过滤 -->
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</Pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 滚动记录文件，先将日志记录到指定文件，当符合某个条件时，将日志记录到其他文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--配置日志输出的文件路径和名称-->
+        <file>info.log</file>
+
+        <!-- ThresholdFilter:临界值过滤器，过滤掉 TRACE 和 DEBUG 级别的日志 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+
+        <encoder>
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</Pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+
+        <!--日志滚动策略，这里配置根据大小和日期自动滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 每天生成一个日志文件，保存30天的日志文件
+            - 如果隔一段时间没有输出日志，前面过期的日志不会被删除，只有再重新打印日志的时候，会触发删除过期日志的操作。
+            -->
+            <fileNamePattern>info.%d{yyyy-MM-dd}.log</fileNamePattern>
+
+            <!-- 每个日志文件至少 100MB,保存30天,但是所有日志占用空间最大不能超过 20GB，超过后清理较旧的日志 -->
+            <!--<maxFileSize>100MB</maxFileSize>-->
+            <maxHistory>30</maxHistory>
+            <!--<totalSizeCap>20GB</totalSizeCap>-->
+
+            <!--  可选的totalSizeCap属性控制所有存档文件的总大小。-->
+            <!--  超过总大小上限时，将异步删除最旧的归档。-->
+            <!--  totalSizeCap属性也需要设置maxHistory属性。 -->
+            <!-- 此外，始终首先应用“最大历史记录”限制，然后应用“总大小上限”限制。-->
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异常日志输出 -->
+    <!--<appender name="EXCEPTION" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+        <!--<file>exception.log</file>-->
+        <!--&lt;!&ndash; 求值过滤器，评估、鉴别日志是否符合指定条件. 需要额外的两个JAR包，commons-compiler.jar和janino.jar &ndash;&gt;-->
+        <!--<filter class="ch.qos.logback.core.filter.EvaluatorFilter">-->
+        <!--&lt;!&ndash; 默认为 ch.qos.logback.classic.boolex.JaninoEventEvaluator &ndash;&gt;-->
+        <!--<evaluator>-->
+        <!--&lt;!&ndash; 过滤掉所有日志消息中不包含"Exception"字符串的日志 &ndash;&gt;-->
+        <!--<expression>return message.contains("Exception");</expression>-->
+        <!--</evaluator>-->
+        <!--<OnMatch>ACCEPT</OnMatch>-->
+        <!--<OnMismatch>DENY</OnMismatch>-->
+        <!--</filter>-->
+
+        <!--<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">-->
+        <!--&lt;!&ndash; 触发节点，按固定文件大小生成，超过5M，生成新的日志文件 &ndash;&gt;-->
+        <!--<maxFileSize>5MB</maxFileSize>-->
+        <!--</triggeringPolicy>-->
+    <!--</appender>-->
+
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>error.log</file>
+
+        <encoder>
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</Pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+
+        <!-- 按照固定窗口模式生成日志文件，当文件大于20MB时，生成新的日志文件。
+        -    窗口大小是1到3，当保存了3个归档文件后，将覆盖最早的日志。
+        -    可以指定文件压缩选项
+        -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>error.%d{yyyy-MM}(%i).log.zip</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>3</maxIndex>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异步输出 -->
+    <appender name ="ASYNC" class= "ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold >0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>512</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref ="ERROR"/>
+    </appender>
+
+
+    <!--
+    - 1.name：包名或类名，用来指定受此logger约束的某一个包或者具体的某一个类
+    - 2.未设置打印级别，所以继承他的上级<root>的日志级别“DEBUG”
+    - 3.未设置addtivity，默认为true，将此logger的打印信息向上级传递；
+    - 4.未设置appender，此logger本身不打印任何信息，级别为“DEBUG”及大于“DEBUG”的日志信息传递给root，
+    -  root接到下级传递的信息，交给已经配置好的名为“STDOUT”的appender处理，“STDOUT”appender将信息打印到控制台；
+    -->
+    <logger name="com.csga.sourceload_server" />
+
+    <!--
+   - 1.将级别为“INFO”及大于“INFO”的日志信息交给此logger指定的名为“STDOUT”的appender处理，在控制台中打出日志，
+   -   不再向次logger的上级 <logger name="logback"/> 传递打印信息
+   - 2.level：设置打印级别（TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF），还有一个特殊值INHERITED或者同义词NULL，代表强制执行上级的级别。
+   -        如果未设置此属性，那么当前logger将会继承上级的级别。
+   - 3.additivity：为false，表示此logger的打印信息不再向上级传递,如果设置为true，会打印两次
+   - 4.appender-ref：指定了名字为"STDOUT"的appender。
+   -->
+    <logger name="com.weizhi.common.LogMain" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <!--<appender-ref ref="DEBUG"/>-->
+        <!--<appender-ref ref="EXCEPTION"/>-->
+        <!--<appender-ref ref="INFO"/>-->
+        <!--<appender-ref ref="ERROR"/>-->
+        <appender-ref ref="ASYNC"/>
+    </logger>
+
+
+    <!--
+    - 根logger
+    - level:设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF，不能设置为INHERITED或者同义词NULL。
+    -       默认是DEBUG。
+    -appender-ref:可以包含零个或多个<appender-ref>元素，标识这个appender将会添加到这个logger
+    -->
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <!--<appender-ref ref="DEBUG"/>-->
+        <!--<appender-ref ref="EXCEPTION"/>-->
+        <!--<appender-ref ref="INFO"/>-->
+        <!--<appender-ref ref="ASYNC"/>-->
+    </root>
+
+    <!-- 开发环境:打印控制台-->
+    <springProfile name="dev">
+        <root level="info">
+            <appender-ref ref="STDOUT" />
+        </root>
+    </springProfile>
+
+
+</configuration>
