@@ -5,6 +5,7 @@ import com.csga.sourceload_server.Model.TaskState;
 import com.csga.sourceload_server.Model.TaskType;
 import com.csga.sourceload_server.Service.TaskInfoService;
 import com.csga.sourceload_server.Utils.AsyncTask.AsyncTaskManager;
+import com.csga.sourceload_server.Utils.Data.DataDownloadUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,6 +65,11 @@ public class TaskInfoController {
             AsyncTaskManager.INSTANCE.setTaskInfo(taskInfo);
         }
         return taskInfoService.addOrUpdateTaskInfo(taskInfo);
+    }
+
+    @GetMapping("testUrl")
+    public Boolean testUrl(@RequestBody String requestUrl){
+        return DataDownloadUtils.testUrl(requestUrl);
     }
 
 

@@ -3,7 +3,7 @@ package com.csga.sourceload_server;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.csga.sourceload_server.Service.TaskInfoService;
-import com.csga.sourceload_server.Utils.Data.DataDownloadUtils;
+import com.csga.sourceload_server.Utils.Data.DBUtils;
 import com.csga.sourceload_server.Utils.Data.ModelGenerator;
 import com.csga.sourceload_server.Utils.DataBase.DataSourceManager;
 import com.csga.sourceload_server.Utils.SpringContextUtil;
@@ -122,7 +122,7 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
             List<Object> list = new ArrayList<>();
             list.add(m);
             list.add(m1);
-            DataDownloadUtils.insertBatchSelective("STD_GOD_SZYQGL_TB_DOG",list,queryRunner);
+            DBUtils.insertBatchSelective("STD_GOD_SZYQGL_TB_DOG",list,queryRunner);
             System.out.println("insert complete!");
 //            insert("STD_GOD_SZYQGL_TB_DOG",m);
         }

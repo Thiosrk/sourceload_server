@@ -7,6 +7,7 @@ import com.csga.sourceload_server.Utils.SpringContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,10 @@ public enum  AsyncTaskManager {
         logger.info("新增任务，ID："+taskInfo.getId());
     }
 
+    public List<TaskInfo> getAllTasks(){
+        return new ArrayList<>(taskContainer.values());
+    }
+
     /**
      * 获取任务信息
      *
@@ -82,6 +87,10 @@ public enum  AsyncTaskManager {
      */
     public TaskState getTaskStatus(Integer taskId) {
         return getTaskInfo(taskId).getTaskState();
+    }
+
+    public void stopTask(Integer taskId){
+        taskContainer.get(taskId);
     }
 
 }

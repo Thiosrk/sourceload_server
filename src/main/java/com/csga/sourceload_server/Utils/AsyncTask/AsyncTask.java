@@ -4,7 +4,9 @@ import com.csga.sourceload_server.Model.TaskInfo;
 import com.csga.sourceload_server.Model.TaskState;
 import com.csga.sourceload_server.Repository.TaskInfoRepository;
 import com.csga.sourceload_server.Service.Impl.TaskServiceImpl;
+import com.csga.sourceload_server.Utils.Data.DBUtils;
 import com.csga.sourceload_server.Utils.Data.DataDownloadUtils;
+import com.csga.sourceload_server.Utils.Data.DateUtils;
 import com.csga.sourceload_server.Utils.Data.JsonUtil;
 import com.csga.sourceload_server.Utils.DataBase.DataSourceManager;
 import com.csga.sourceload_server.Utils.SpringContextUtil;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +28,7 @@ public class AsyncTask implements AsyncTaskConstructor{
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
 
     @Override
-    public void async(Integer taskInfoId) throws Exception {
+    public void async(Integer taskInfoId) {
 
         logger.info("开始数据下载任务，任务编号："+taskInfoId);
         TaskInfo taskInfo = AsyncTaskManager.INSTANCE.getTaskInfo(taskInfoId);
@@ -42,6 +45,8 @@ public class AsyncTask implements AsyncTaskConstructor{
         String taskType = taskInfo.getTaskType().getName();
         String tableName = taskInfo.getTableName();
         Integer totalInLocal = taskInfo.getTotalInLocal();
+        String timestampField = taskInfo.getTimestampField();
+        Date updateTimestampValue = taskInfo.getUpdateTimestampValue();
 
         String result;
         List<Object> objectList;
@@ -66,62 +71,138 @@ public class AsyncTask implements AsyncTaskConstructor{
         }
         logger.info("加载完毕");
 
-//        logger.info("测试url地址：");
-//        if (DataDownloadUtils.testUrl(postUrl)){
-//            logger.info("连接成功");
-//        }else {
-//            logger.info("连接失败");
-//        }
+        Integer count;
+        try{
+            logger.info("查询数据总量：");
+            //获取数据总量
+            count = DataDownloadUtils.count(tableName,systemId,postUrl,"");
+            taskInfo.setTotalFromSource(count);
+            logger.info("请求接口数据总量："+count);
+            Integer page = DataDownloadUtils.getMaxPage(count,pageSize);
 
-        logger.info("查询数据总量：");
-        //获取数据总量
-        Integer count = DataDownloadUtils.count(tableName,systemId,postUrl);
-        taskInfo.setTotalFromSource(count);
-        logger.info("请求接口数据总量："+count);
-        Integer page = DataDownloadUtils.getMaxPage(count,pageSize);
+            logger.info("开始抽取:");
+            Integer pageNo = startPage;
 
-        //
-        if (page >= 3000){
-            logger.info("数据总页数大于3000，剩余未抽取页数："+(page-3000)+",下次抽取起始页："+(startPage+3000));
-            page = 3000;
-        }else {
-            logger.info("数据总页数小于3000，共抽取页数："+page);
-        }
-
-        logger.info("开始抽取:");
-        logger.info("抽取起始页："+startPage);
-        Integer pageNo = startPage;
-        for (;pageNo < page+startPage;pageNo++){
-            result = DataDownloadUtils.loaddata(tableName,
-                    systemId,
-                    "",
-                    "*",
-                    "",
-                    pageNo.toString(),
-                    pageSize.toString(),
-                    postUrl);
-            objectList = JsonUtil.toObjects(result, "data",modelclz);
-            for (Object object: objectList) {
-                method.invoke(object,sequence++);
-                logger.info("数据："+object.toString());
-            }
-            totalInsert += objectList.size();
+            if("".equals(timestampField)){
+                logger.info("数据表无时间字段，全量更新: ");
+                for (;pageNo < page+startPage;pageNo++){
+                    result = DataDownloadUtils.loaddata(tableName,
+                            systemId,
+                            "",
+                            "*",
+                            "",
+                            pageNo.toString(),
+                            pageSize.toString(),
+                            postUrl);
+                    objectList = JsonUtil.toObjects(result, "data",modelclz);
+                    for (Object object: objectList) {
+                        try {
+                            method.invoke(object,sequence++);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                        logger.info("数据："+object.toString());
+                    }
+                    totalInsert += objectList.size();
+                    DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
+                    logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
+                    objectList.clear();
+                }
+            }else {
+                logger.info("同步时间字段："+timestampField);
+                if (updateTimestampValue == null){
+                    logger.info("上次更新时间为空，第一次更新：");
+                    if (page>3000){
+                        page = 3000;
+                    }
+                    for (;pageNo < page+startPage;pageNo++){
+                        result = DataDownloadUtils.loaddata(tableName,
+                                systemId,
+                                "",
+                                "*",
+                                timestampField,
+                                pageNo.toString(),
+                                pageSize.toString(),
+                                postUrl);
+                        objectList = JsonUtil.toObjects(result, "data",modelclz);
+                        for (Object object: objectList) {
+                            try {
+                                method.invoke(object,sequence++);
+                            } catch (IllegalAccessException e) {
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
+                                e.printStackTrace();
+                            }
+                            logger.info("数据："+object.toString());
+                        }
+                        totalInsert += objectList.size();
 //            DataDownloadUtils.insert(tableName,objectList.get(0),queryRunner);
-            DataDownloadUtils.insertBatchSelective(tableName,objectList,queryRunner);
-            logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
-            objectList.clear();
-        }
-        DataSourceManager.INSTANCE.clearDataSource();
-        logger.info("表\""+tableName+"\"本次抽取数据完成，调用接口次数："+pageNo+",请求接口数据总量："+count+",插入数据总量："+totalInsert);
-        totalInLocal +=totalInsert;
-        taskInfo.setTotalInLocal(totalInLocal);
-        taskInfo.setTableSequence(sequence);
-        taskInfo.setTaskState(TaskState.Finish);
-        taskInfo.setStartPage(pageNo);
-        taskInfo.setUpdateTime(new Date());
+                        DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
+                        logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
+                        objectList.clear();
+                    }
+                }else {
+                    logger.info("上次更新时间为："+ DateUtils.formatDate(updateTimestampValue));
+                    String condition = "{\""+timestampField+"\":\">="+DateUtils.formatDate(updateTimestampValue)+"\"}";
+                    Integer updateCount = DataDownloadUtils.count(
+                            tableName,
+                            systemId,
+                            postUrl,
+                            condition);
+                    Integer updatePage = DataDownloadUtils.getMaxPage(updateCount,pageSize);
+                    if (updatePage>3000){
+                        updatePage = 3000;
+                    }
+                    for (;pageNo < updatePage+startPage;pageNo++){
+                        result = DataDownloadUtils.loaddata(tableName,
+                                systemId,
+                                condition,
+                                "*",
+                                timestampField,
+                                pageNo.toString(),
+                                pageSize.toString(),
+                                postUrl);
+                        objectList = JsonUtil.toObjects(result, "data",modelclz);
+                        for (Object object: objectList) {
+                            try {
+                                method.invoke(object,sequence++);
+                            } catch (IllegalAccessException e) {
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
+                                e.printStackTrace();
+                            }
+                            logger.info("数据："+object.toString());
+                        }
+                        totalInsert += objectList.size();
+                        DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
+                        logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
+                        objectList.clear();
+                    }
 
-        this.repository = (TaskInfoRepository) SpringContextUtil.getBean(TaskInfoRepository.class);
-        repository.saveAndFlush(taskInfo);
+                }
+                taskInfo.setUpdateTimestampValue(DBUtils.getLastTime(tableName,timestampField,queryRunner));
+            }
+
+            DataSourceManager.INSTANCE.clearDataSource();
+            logger.info("表\""+tableName+"\"本次抽取数据完成，调用接口次数："+pageNo+",请求接口数据总量："+count+",插入数据总量："+totalInsert);
+            totalInLocal +=totalInsert;
+            taskInfo.setTotalInLocal(totalInLocal);
+            taskInfo.setTableSequence(sequence);
+            taskInfo.setTaskState(TaskState.Finish);
+            taskInfo.setStartPage(pageNo);
+            taskInfo.setUpdateTime(new Date());
+
+            this.repository = (TaskInfoRepository) SpringContextUtil.getBean(TaskInfoRepository.class);
+            repository.saveAndFlush(taskInfo);
+
+
+        } catch (Exception e){
+            logger.info("接口调用有误,数据表无法访问，请测试接口可用性");
+        }
+
+
 
     }
 }
