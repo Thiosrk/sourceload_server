@@ -40,7 +40,7 @@ public class TaskInfo {
 
     private Integer pageSize;//每页数据量，默认1000条记录
 
-    private Integer tableSequence;//任务对应数据表主键增量
+//    private Integer tableSequence;//任务对应数据表主键增量
 
     private String dataSource;//任务对应数据源
 
@@ -50,7 +50,7 @@ public class TaskInfo {
         return new TaskInfo.TaskInfoBuilder();
     }
 
-    public TaskInfo(final Integer id, final String tableName, final Integer totalFromSource, final Integer totalInLocal, final Date updateTime, final Date createTime, final Integer creatorId, final TaskType taskType, final String timestampField, final Date updateTimestampValue, final Integer timeInterval, final String systemId, final String requestUrl, final Integer startPage, final Integer pageSize, final Integer tableSequence, final String dataSource, final TaskState taskState) {
+    public TaskInfo(final Integer id, final String tableName, final Integer totalFromSource, final Integer totalInLocal, final Date updateTime, final Date createTime, final Integer creatorId, final TaskType taskType, final String timestampField, final Date updateTimestampValue, final Integer timeInterval, final String systemId, final String requestUrl, final Integer startPage, final Integer pageSize, final String dataSource, final TaskState taskState) {
         this.id = id;
         this.tableName = tableName;
         this.totalFromSource = totalFromSource;
@@ -66,7 +66,7 @@ public class TaskInfo {
         this.requestUrl = requestUrl;
         this.startPage = startPage;
         this.pageSize = pageSize;
-        this.tableSequence = tableSequence;
+//        this.tableSequence = tableSequence;
         this.dataSource = dataSource;
         this.taskState = taskState;
     }
@@ -194,13 +194,13 @@ public class TaskInfo {
         this.pageSize = pageSize;
     }
 
-    public Integer getTableSequence() {
-        return tableSequence;
-    }
+//    public Integer getTableSequence() {
+//        return tableSequence;
+//    }
 
-    public void setTableSequence(Integer tableSequence) {
-        this.tableSequence = tableSequence;
-    }
+//    public void setTableSequence(Integer tableSequence) {
+//        this.tableSequence = tableSequence;
+//    }
 
     public String getDataSource() {
         return dataSource;
@@ -236,7 +236,7 @@ public class TaskInfo {
                 ", requestUrl='" + requestUrl + '\'' +
                 ", startPage=" + startPage +
                 ", pageSize=" + pageSize +
-                ", tableSequence=" + tableSequence +
+//                ", tableSequence=" + tableSequence +
                 ", dataSource='" + dataSource + '\'' +
                 ", taskState=" + taskState +
                 '}';
@@ -258,7 +258,7 @@ public class TaskInfo {
         private String requestUrl;
         private Integer startPage;
         private Integer pageSize;
-        private Integer tableSequence;
+//        private Integer tableSequence;
         private String dataSource;
         private TaskState taskState;
 
@@ -340,10 +340,10 @@ public class TaskInfo {
             return this;
         }
 
-        public TaskInfo.TaskInfoBuilder tableSequence(final Integer tableSequence) {
-            this.tableSequence = tableSequence;
-            return this;
-        }
+//        public TaskInfo.TaskInfoBuilder tableSequence(final Integer tableSequence) {
+//            this.tableSequence = tableSequence;
+//            return this;
+//        }
 
         public TaskInfo.TaskInfoBuilder dataSource(final String dataSource) {
             this.dataSource = dataSource;
@@ -356,11 +356,28 @@ public class TaskInfo {
         }
 
         public TaskInfo build() {
-            return new TaskInfo(this.id, this.tableName, this.totalFromSource, this.totalInLocal, this.updateTime, this.createTime, this.creatorId, this.taskType, this.timestampField, this.updateTimestampValue, this.timeInterval, this.systemId, this.requestUrl, this.startPage, this.pageSize, this.tableSequence, this.dataSource, this.taskState);
+            return new TaskInfo(this.id, this.tableName, this.totalFromSource, this.totalInLocal, this.updateTime, this.createTime, this.creatorId, this.taskType, this.timestampField, this.updateTimestampValue, this.timeInterval, this.systemId, this.requestUrl, this.startPage, this.pageSize, this.dataSource, this.taskState);
         }
 
         public String toString() {
-            return "TaskInfo.TaskInfoBuilder(id=" + this.id + ", tableName=" + this.tableName + ", totalFromSource=" + this.totalFromSource + ", totalInLocal=" + this.totalInLocal + ", updateTime=" + this.updateTime + ", createTime=" + this.createTime + ", creatorId=" + this.creatorId + ", taskType=" + this.taskType + ", timestampField=" + this.timestampField + ", updateTimestampValue=" + this.updateTimestampValue + ", timeInterval=" + this.timeInterval + ", systemId=" + this.systemId + ", requestUrl=" + this.requestUrl + ", startPage=" + this.startPage + ", pageSize=" + this.pageSize + ", tableSequence=" + this.tableSequence + ", dataSource=" + this.dataSource + ", taskState=" + this.taskState + ")";
+            return "TaskInfo.TaskInfoBuilder(id=" + this.id +
+                    ", tableName=" + this.tableName +
+                    ", totalFromSource=" + this.totalFromSource +
+                    ", totalInLocal=" + this.totalInLocal +
+                    ", updateTime=" + this.updateTime +
+                    ", createTime=" + this.createTime +
+                    ", creatorId=" + this.creatorId +
+                    ", taskType=" + this.taskType +
+                    ", timestampField=" + this.timestampField +
+                    ", updateTimestampValue=" + this.updateTimestampValue +
+                    ", timeInterval=" + this.timeInterval +
+                    ", systemId=" + this.systemId +
+                    ", requestUrl=" + this.requestUrl +
+                    ", startPage=" + this.startPage +
+                    ", pageSize=" + this.pageSize +
+//                    ", tableSequence=" + this.tableSequence +
+                    ", dataSource=" + this.dataSource +
+                    ", taskState=" + this.taskState + ")";
         }
     }
 

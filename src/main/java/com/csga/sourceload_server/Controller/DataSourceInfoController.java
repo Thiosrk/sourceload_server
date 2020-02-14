@@ -23,7 +23,7 @@ public class DataSourceInfoController {
     }
 
     @PostMapping("/{id}")
-    public DataSourceInfo model(@PathVariable("id") Integer creatorId){
+    public DataSourceInfo getOne(@PathVariable("id") Integer creatorId){
         return DataSourceInfo.builder()
                 .creator(creatorId)
                 .createTime(new Date())

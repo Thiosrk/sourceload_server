@@ -50,7 +50,7 @@ public enum  AsyncTaskManager {
      * @return taskInfo
      */
     public TaskInfo submit(AsyncTask asyncTaskConstructor,TaskInfo taskInfo) throws Exception {
-
+        System.out.println(taskInfo);
         asyncTaskExecutor.executor(asyncTaskConstructor,taskInfo.getId());
         return taskInfo;
     }

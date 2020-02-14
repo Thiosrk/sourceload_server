@@ -9,4 +9,6 @@ public interface TaskInfoRepository extends JpaRepository<TaskInfo,Integer> {
 
     List<TaskInfo> findByCreatorId(Integer creatorid);
 
+    List<TaskInfo> findByTableName(String tableName);
+
 }

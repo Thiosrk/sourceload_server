@@ -45,8 +45,10 @@ public class TaskController {
 
     @PostMapping("/start")
     public TaskInfo start(@RequestBody TaskInfo taskInfo) throws Exception {
+
         taskInfo.setTaskState(TaskState.Running);
         taskInfo = taskInfoService.addOrUpdateTaskInfo(taskInfo);
+        System.out.println(taskInfo);
         taskInfo = AsyncTaskManager.INSTANCE.submit(new AsyncTask(),taskInfo);
         return taskInfo;
     }

@@ -1,7 +1,6 @@
 package com.csga.sourceload_server.Utils.Data;
 
 import com.alibaba.fastjson.JSONArray;
-import com.csga.sourceload_server.Utils.Http.HttpClientUtils;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -29,19 +28,11 @@ public class DataDownloadUtils {
         dataMap.put("pageNo", pageNo);
         dataMap.put("pageSize", pageSize);
         dataMap.put("md5Flag", "true");
-        String result = HttpClientUtils.post(requestUrl, dataMap,"utf-8");
+//        String result = HttpClientUtils.post(requestUrl, dataMap,"utf-8");
 
-        return result;
+//        return result;
 
-//        return "{\"result\":\"true\",\"data\":[{\"count\":\"11111\",\"qzsjjzdz\":\"7\",\"wjzmp\":\"3\",\"qzzlhfx\":" +
-//                "\"7\",\"dwsh\":\"3\",\"wjqzzlhfx\":\"7\",\"owner_flag\":\"1\",\"wjqzsh\":\"3\",\"oid\":94469," +
-//                "\"qzzlhhm\":\"60\",\"qzsh\":\"1\",\"qzhjxz\":\"xasidaihd\",\"odate\":1414633549000," +
-//                "\"dwmp\":\"3\",\"qzzlh\":\"1\",\"etl_dt\":\"2019-07-25\",\"qzfh\":\"3\",\"qzshm\":\"104\"," +
-//                "\"wjqzzlh\":\"7\",\"wjqzfh\":\"3\",\"qzxb\":\"2\",\"qzpcs\":\"320586431\"," +
-//                "\"qzsfzh\":\"320223197610021127\",\"qzxm\":\"dfsdf\",\"qzmp\":\"3\",\"qzhjdz\":\"320500\"," +
-//                "\"dwfh\":\"3\",\"dwzlh\":\"7\",\"qzyddh\":\"13771886601\",\"dwzlhfx\":\"7\",\"wjqzxb\":\"1\"," +
-//                "\"etl_job\":\"ODS_SZYQGL_TB_DOG_OWNER\",\"qzsjjzxz1\":\"32050003991\"}],\"message\":\"���óɹ�\"," +
-//                "\"md5\":\"abd6eca2b1104af317eb4dd9414ad062\"}";
+        return "{\"result\":\"true\",\"data\":[{\"wbzsbm\":\"0000\",\"yonghumc\":\"0\",\"citgc_time\":\"2019-04-22 01:46:05\",\"xzqh\":\"\",\"jgmc\":\"\",\"macdz\":\"40-B0-76-48-46-C6\",\"fwdm\":\"32058310000146\",\"sxsj\":\"2019-04-22 01:40:39\",\"ipdz\":\"172.16.32.14\",\"fwqsl\":\"\",\"fwlx\":\"NETBAR\",\"xxsj\":\"\",\"weidu\":\"\",\"citgc_source\":\"\",\"swkh\":\"0000\",\"zslxdm\":\"990\",\"hhbm\":\"320583014640B0764846C620190422014028\",\"zjm\":\"CQ014\",\"gjdm\":\"CHN\",\"etl_dt\":\"\",\"etl_job\":\"\"}],\"message\":\"调用成功\"}";
 
 
     }
@@ -55,7 +46,8 @@ public class DataDownloadUtils {
 
         JSONArray data = (JSONArray) JsonUtil.toJson(result,"data");
 
-        return data.getJSONObject(0).getInteger("count");
+//        return data.getJSONObject(0).getInteger("count");
+        return 1;
     }
 
     public static Integer getMaxPage(Integer count, Integer pageSize){

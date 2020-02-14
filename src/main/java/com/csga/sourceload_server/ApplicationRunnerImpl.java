@@ -3,6 +3,7 @@ package com.csga.sourceload_server;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.csga.sourceload_server.Service.TaskInfoService;
+import com.csga.sourceload_server.Utils.AsyncTask.AsyncTaskManager;
 import com.csga.sourceload_server.Utils.Data.DBUtils;
 import com.csga.sourceload_server.Utils.Data.ModelGenerator;
 import com.csga.sourceload_server.Utils.DataBase.DataSourceManager;
@@ -44,8 +45,8 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
         String info = "信息";
         logger.info("info：{}",info);
 
-//        AsyncTaskManager.INSTANCE.initTaskContainer();
-//        DataSourceManager.INSTANCE.init();
+        AsyncTaskManager.INSTANCE.initTaskContainer();
+        DataSourceManager.INSTANCE.init();
 
 //        service.addOrUpdateTaskInfo(TaskInfo.builder()
 //                .tableSequence(1)

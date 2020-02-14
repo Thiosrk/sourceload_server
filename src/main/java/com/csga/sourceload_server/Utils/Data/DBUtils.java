@@ -10,8 +10,19 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.*;
+import java.sql.Timestamp;
+
 
 public class DBUtils {
+
+    public static void createTable(String sql,QueryRunner queryRunner){
+
+        try {
+            queryRunner.execute(sql);
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
 
     public static Date getLastTime(String tableName, String timeField, QueryRunner queryRunner){
         try {
@@ -67,6 +78,7 @@ public class DBUtils {
 
                 for(int i = 0; i < list.size(); i++){
                     K k = list.get(i);
+//                    System.out.println(k.toString());
                     Map<String, Object> elementParams = objectToMap(k);
                     //参数值
                     List<Object> valuesList = new ArrayList<>();
@@ -81,7 +93,13 @@ public class DBUtils {
                                     keysList.add(entry.getKey());
                                     markList.add("?");
                                 }
-                                valuesList.add(entry.getValue());
+                                System.out.println(entry.getValue());
+                                System.out.println(entry.getKey());
+                                if (entry.getValue() instanceof Date){
+                                    valuesList.add(new Timestamp(((Date) entry.getValue()).getTime()));
+                                }else {
+                                    valuesList.add(entry.getValue());
+                                }
                             }
                         }
 
@@ -97,7 +115,7 @@ public class DBUtils {
                 return queryRunner.batch(sql, params);
             }
         } catch (Exception e) {
-//            logger.error(e.getMessage());
+            e.printStackTrace();
         }
         return new int[]{0};
     }

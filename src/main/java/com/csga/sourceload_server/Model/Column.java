@@ -1,20 +1,51 @@
 package com.csga.sourceload_server.Model;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "TaskTable")
 public class Column {
+
+    @Id
+    @GeneratedValue
+    private Long Id;//id
+
+    private String tableName;//表名
 
     private String colName;//列名
 
     private String colType;//类型
 
-    private String comment;//注释
+    private String description;//注释
 
-    public Column(final String colName, final String colType, final String comment) {
+    public Column(final String tableName, final String colName, final String colType, final String description) {
+        this.Id=null;
+        this.tableName = tableName;
         this.colName = colName;
         this.colType = colType;
-        this.comment = comment;
+        this.description = description;
     }
 
     public Column() {
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public Long getId() {
+        return Id;
+    }
+
+    public void setId(Long id) {
+        Id = id;
     }
 
     public String getColName() {
@@ -33,20 +64,22 @@ public class Column {
         this.colType = colType;
     }
 
-    public String getComment() {
-        return comment;
+    public String getDescription() {
+        return description;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     @Override
     public String toString() {
         return "Column{" +
+                "Id='" + Id + '\'' +
+                "tableName='" + tableName + '\'' +
                 "colName='" + colName + '\'' +
                 ", colType='" + colType + '\'' +
-                ", comment='" + comment + '\'' +
+                ", description='" + description + '\'' +
                 '}';
     }
 }

@@ -2,8 +2,8 @@ package com.csga.sourceload_server.Utils.AsyncTask;
 
 import com.csga.sourceload_server.Model.TaskInfo;
 import com.csga.sourceload_server.Model.TaskState;
-import com.csga.sourceload_server.Repository.TaskInfoRepository;
 import com.csga.sourceload_server.Service.Impl.TaskServiceImpl;
+import com.csga.sourceload_server.Service.TaskInfoService;
 import com.csga.sourceload_server.Utils.Data.DBUtils;
 import com.csga.sourceload_server.Utils.Data.DataDownloadUtils;
 import com.csga.sourceload_server.Utils.Data.DateUtils;
@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
@@ -23,25 +22,24 @@ import java.util.List;
 @Component
 public class AsyncTask implements AsyncTaskConstructor{
 
-    TaskInfoRepository repository;
+    TaskInfoService service;
 
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
 
     @Override
     public void async(Integer taskInfoId) {
+        this.service = (TaskInfoService) SpringContextUtil.getBean(TaskInfoService.class);
 
         logger.info("开始数据下载任务，任务编号："+taskInfoId);
         TaskInfo taskInfo = AsyncTaskManager.INSTANCE.getTaskInfo(taskInfoId);
         logger.info("任务数据源："+taskInfo.getDataSource());
-        DataSourceManager.INSTANCE.setCurrentDataSource(taskInfo.getDataSource());
-
-        QueryRunner queryRunner = new QueryRunner(DataSourceManager.INSTANCE.getCurrentDataSource());
+        QueryRunner queryRunner = null;
 
         String postUrl = taskInfo.getRequestUrl();
         String systemId = taskInfo.getSystemId();
         Integer startPage = taskInfo.getStartPage();
         Integer pageSize = taskInfo.getPageSize();
-        Integer sequence = taskInfo.getTableSequence();
+//        Integer sequence = taskInfo.getTableSequence();
         String taskType = taskInfo.getTaskType().getName();
         String tableName = taskInfo.getTableName();
         Integer totalInLocal = taskInfo.getTotalInLocal();
@@ -61,12 +59,10 @@ public class AsyncTask implements AsyncTaskConstructor{
 
         try {
             modelclz = Class.forName("com.csga.sourceload_server.Model."+tableName);
-            String methodName = "setU_id";
-            method = modelclz.getDeclaredMethod(methodName,Integer.class);
+//            String methodName = "setU_id";
+//            method = modelclz.getDeclaredMethod(methodName,Integer.class);
         } catch (ClassNotFoundException e) {
             logger.info("加载失败，无对应实体类！");
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
         logger.info("加载完毕");
@@ -83,9 +79,12 @@ public class AsyncTask implements AsyncTaskConstructor{
             logger.info("开始抽取:");
             Integer pageNo = startPage;
 
-            if("".equals(timestampField)){
+            if(null==timestampField){
                 logger.info("数据表无时间字段，全量更新: ");
                 for (;pageNo < page+startPage;pageNo++){
+                    if (service.getTaskState(taskInfoId).equals(TaskState.Stop)){
+                        throw new InterruptedException();
+                    }
                     result = DataDownloadUtils.loaddata(tableName,
                             systemId,
                             "",
@@ -96,16 +95,18 @@ public class AsyncTask implements AsyncTaskConstructor{
                             postUrl);
                     objectList = JsonUtil.toObjects(result, "data",modelclz);
                     for (Object object: objectList) {
-                        try {
-                            method.invoke(object,sequence++);
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (InvocationTargetException e) {
-                            e.printStackTrace();
-                        }
+//                        try {
+//                            method.invoke(object,sequence++);
+//                        } catch (IllegalAccessException e) {
+//                            e.printStackTrace();
+//                        } catch (InvocationTargetException e) {
+//                            e.printStackTrace();
+//                        }
                         logger.info("数据："+object.toString());
                     }
                     totalInsert += objectList.size();
+                    DataSourceManager.INSTANCE.setCurrentDataSource(taskInfo.getDataSource());
+                    queryRunner= new QueryRunner(DataSourceManager.INSTANCE.getCurrentDataSource());
                     DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
                     logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
                     objectList.clear();
@@ -118,6 +119,9 @@ public class AsyncTask implements AsyncTaskConstructor{
                         page = 3000;
                     }
                     for (;pageNo < page+startPage;pageNo++){
+                        if (service.getTaskState(taskInfoId).equals(TaskState.Stop)){
+                            throw new InterruptedException();
+                        }
                         result = DataDownloadUtils.loaddata(tableName,
                                 systemId,
                                 "",
@@ -128,17 +132,19 @@ public class AsyncTask implements AsyncTaskConstructor{
                                 postUrl);
                         objectList = JsonUtil.toObjects(result, "data",modelclz);
                         for (Object object: objectList) {
-                            try {
-                                method.invoke(object,sequence++);
-                            } catch (IllegalAccessException e) {
-                                e.printStackTrace();
-                            } catch (InvocationTargetException e) {
-                                e.printStackTrace();
-                            }
+//                            try {
+//                                method.invoke(object,sequence++);
+//                            } catch (IllegalAccessException e) {
+//                                e.printStackTrace();
+//                            } catch (InvocationTargetException e) {
+//                                e.printStackTrace();
+//                            }
                             logger.info("数据："+object.toString());
                         }
                         totalInsert += objectList.size();
 //            DataDownloadUtils.insert(tableName,objectList.get(0),queryRunner);
+                        DataSourceManager.INSTANCE.setCurrentDataSource(taskInfo.getDataSource());
+                        queryRunner= new QueryRunner(DataSourceManager.INSTANCE.getCurrentDataSource());
                         DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
                         logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
                         objectList.clear();
@@ -156,6 +162,9 @@ public class AsyncTask implements AsyncTaskConstructor{
                         updatePage = 3000;
                     }
                     for (;pageNo < updatePage+startPage;pageNo++){
+                        if (service.getTaskState(taskInfoId).equals(TaskState.Stop)){
+                            throw new InterruptedException();
+                        }
                         result = DataDownloadUtils.loaddata(tableName,
                                 systemId,
                                 condition,
@@ -166,16 +175,18 @@ public class AsyncTask implements AsyncTaskConstructor{
                                 postUrl);
                         objectList = JsonUtil.toObjects(result, "data",modelclz);
                         for (Object object: objectList) {
-                            try {
-                                method.invoke(object,sequence++);
-                            } catch (IllegalAccessException e) {
-                                e.printStackTrace();
-                            } catch (InvocationTargetException e) {
-                                e.printStackTrace();
-                            }
+//                            try {
+//                                method.invoke(object,sequence++);
+//                            } catch (IllegalAccessException e) {
+//                                e.printStackTrace();
+//                            } catch (InvocationTargetException e) {
+//                                e.printStackTrace();
+//                            }
                             logger.info("数据："+object.toString());
                         }
                         totalInsert += objectList.size();
+                        DataSourceManager.INSTANCE.setCurrentDataSource(taskInfo.getDataSource());
+                        queryRunner= new QueryRunner(DataSourceManager.INSTANCE.getCurrentDataSource());
                         DBUtils.insertBatchSelective(tableName,objectList,queryRunner);
                         logger.info("第" + pageNo + "页数据插入完成，插入数据" + objectList.size() + "条");
                         objectList.clear();
@@ -189,20 +200,26 @@ public class AsyncTask implements AsyncTaskConstructor{
             logger.info("表\""+tableName+"\"本次抽取数据完成，调用接口次数："+pageNo+",请求接口数据总量："+count+",插入数据总量："+totalInsert);
             totalInLocal +=totalInsert;
             taskInfo.setTotalInLocal(totalInLocal);
-            taskInfo.setTableSequence(sequence);
+//            taskInfo.setTableSequence(sequence);
             taskInfo.setTaskState(TaskState.Finish);
             taskInfo.setStartPage(pageNo);
             taskInfo.setUpdateTime(new Date());
 
-            this.repository = (TaskInfoRepository) SpringContextUtil.getBean(TaskInfoRepository.class);
-            repository.saveAndFlush(taskInfo);
+            this.service = (TaskInfoService) SpringContextUtil.getBean(TaskInfoService.class);
+
+            service.addOrUpdateTaskInfo(taskInfo);
 
 
+        } catch (InterruptedException e){
+            logger.info("任务：{ "+tableName+" }已手动停止！");
+            e.printStackTrace();
         } catch (Exception e){
+            e.printStackTrace();
             logger.info("接口调用有误,数据表无法访问，请测试接口可用性");
         }
 
 
 
     }
+
 }

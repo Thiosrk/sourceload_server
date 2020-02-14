@@ -18,11 +18,11 @@ public class TaskServiceImpl implements TaskService {
     DataSourceInfoService dataSourceInfoService;
 
     @Override
-    public TaskInfo stopTask(TaskInfo taskInfo) throws Exception {
+    public TaskInfo stopTask(TaskInfo taskInfo){
 
         taskInfo.setTaskState(TaskState.Stop);
 
-        return null;
+        return taskInfo;
     }
 
 }

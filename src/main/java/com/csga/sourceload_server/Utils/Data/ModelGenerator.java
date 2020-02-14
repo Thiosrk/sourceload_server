@@ -1,6 +1,12 @@
 package com.csga.sourceload_server.Utils.Data;
 
 import com.csga.sourceload_server.Model.Column;
+import com.csga.sourceload_server.Model.TaskInfo;
+import com.csga.sourceload_server.Service.ColumnService;
+import com.csga.sourceload_server.Service.TaskInfoService;
+import com.csga.sourceload_server.Utils.DataBase.DataSourceManager;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -8,6 +14,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.tools.*;
@@ -19,6 +26,11 @@ import java.util.List;
 public class ModelGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(ModelGenerator.class);
+
+    @Autowired
+    TaskInfoService taskInfoService;
+    @Autowired
+    ColumnService columnService;
 
     private String modelName;
 
@@ -64,10 +76,13 @@ public class ModelGenerator {
             row = sheet.getRow(i);
             if (row==null)
                 break;
+            if (StringUtils.isEmpty(sheet.getRow(i).getCell(0).getStringCellValue())){
+                break;
+            }
             String name = sheet.getRow(i).getCell(0).getStringCellValue();
             String comment = sheet.getRow(i).getCell(1).getStringCellValue();
             String type = sheet.getRow(i).getCell(2).getStringCellValue();
-            columnList.add(new Column(name,type,comment));
+            columnList.add(new Column(modelName,name,type,comment));
         }
         String modelContent = parseModel();
         String modelOutPutPath="";
@@ -86,6 +101,45 @@ public class ModelGenerator {
             generateClassFile(modelOutPutPath);
         }
         logger.info("实体类生成完毕！");
+        logger.info("开始数据库建表，表名："+modelName);
+        try {
+            generateDBTable(modelName,columnList);
+        }catch (Exception e){
+            logger.info("建表失败，错误内容：");
+            e.printStackTrace();
+        }
+        logger.info("建表完成！");
+        logger.info("开始保存任务数据表结构，表名："+modelName);
+        try {
+            saveTable(columnList);
+        }catch (Exception e){
+            logger.info("保存失败，错误内容：");
+            e.printStackTrace();
+        }
+        logger.info("保存完毕！已录入数据库");
+
+    }
+
+    private void saveTable(List<Column> columns){
+        columnService.addOrUpdateColumns(columns);
+    }
+
+    private void generateDBTable(String modelName,List<Column> columns){
+        TaskInfo taskInfo = taskInfoService.getTaskInfoByTableName(modelName);
+        DataSourceManager.INSTANCE.setCurrentDataSource(taskInfo.getDataSource());
+        QueryRunner queryRunner = new QueryRunner(DataSourceManager.INSTANCE.getCurrentDataSource());
+
+        StringBuffer sb = new StringBuffer("create table ");
+        sb.append(modelName).append("(");
+        for (int i=0 ; i<columns.size()-1 ; i++){
+            sb.append(columns.get(i).getColName()).append(" ");
+            sb.append(oracleType(columns.get(i).getColType())).append(",");
+        }
+        sb.append(columns.get(columns.size()-1).getColName()).append(" ");
+        sb.append(oracleType(columns.get(columns.size()-1).getColType())).append(")");
+
+        logger.info("建表语句："+sb.toString());
+        DBUtils.createTable(sb.toString(),queryRunner);
 
     }
 
@@ -140,9 +194,9 @@ public class ModelGenerator {
         sb.append("import java.math.BigDecimal;\r\n\r\n");
         sb.append("@Table(name = \"");sb.append(modelName);sb.append("\")\r\n");
         sb.append("public class ");sb.append(modelName);sb.append(" {\r\n\r\n");
-        sb.append("    @Id\r\n");
-        sb.append("    @GeneratedValue\r\n");
-        sb.append("    private Integer u_id;//临时主键\r\n");
+//        sb.append("    @Id\r\n");
+//        sb.append("    @GeneratedValue\r\n");
+//        sb.append("    private Integer u_id;//临时主键\r\n");
         processAllAttrs(sb);
         processAllMethod(sb);
         sb.append("}\r\n");
@@ -152,8 +206,9 @@ public class ModelGenerator {
     private void processAllAttrs(StringBuffer sb) {
 
         for (Column column:columnList) {
+            System.out.println(column.toString());
             sb.append("    private " + sqlType2JavaType(column.getColType()) + " "
-                    + column.getColName() + "; //"+column.getComment()+"\r\n");
+                    + column.getColName() + "; //"+column.getDescription()+"\r\n");
         }
         sb.append("\r\n");
 
@@ -161,12 +216,12 @@ public class ModelGenerator {
 
     private void processAllMethod(StringBuffer sb) {
 
-        sb.append("    public Integer getU_id(){\r\n");
-        sb.append("        return u_id;\r\n");
-        sb.append("    }\r\n");
-        sb.append("    public void setU_id(Integer u_id){\r\n");
-        sb.append("        this.u_id = u_id;\r\n");
-        sb.append("    }\r\n");
+//        sb.append("    public Integer getU_id(){\r\n");
+//        sb.append("        return u_id;\r\n");
+//        sb.append("    }\r\n");
+//        sb.append("    public void setU_id(Integer u_id){\r\n");
+//        sb.append("        this.u_id = u_id;\r\n");
+//        sb.append("    }\r\n");
 
         for (Column column:columnList){
             String name = column.getColName();
@@ -181,50 +236,14 @@ public class ModelGenerator {
             sb.append("        this." + name + "=" + name + ";\r\n");
             sb.append("    }\r\n");
         }
-//        sb.append("@Override\n" +
-//                "    public String toString() {\n" +
-//                "        return \"STD_GOD_SZYQGL_TB_DOG{\" +\n" +
-//                "                \"u_id=\" + u_id +\n" +
-//                "                \", etl_job='\" + etl_job + '\\'' +\n" +
-//                "                \", del_flag='\" + del_flag + '\\'' +\n" +
-//                "                \", end_dt=\" + end_dt +\n" +
-//                "                \", start_dt=\" + start_dt +\n" +
-//                "                \", tbsj=\" + tbsj +\n" +
-//                "                \", nwxwwtbsjc=\" + nwxwwtbsjc +\n" +
-//                "                \", qzxxlydm='\" + qzxxlydm + '\\'' +\n" +
-//                "                \", qzcdscdm='\" + qzcdscdm + '\\'' +\n" +
-//                "                \", qzczlxdm='\" + qzczlxdm + '\\'' +\n" +
-//                "                \", shbs='\" + shbs + '\\'' +\n" +
-//                "                \", mjjh='\" + mjjh + '\\'' +\n" +
-//                "                \", tjsj=\" + tjsj +\n" +
-//                "                \", qzzzzdm='\" + qzzzzdm + '\\'' +\n" +
-//                "                \", sclzrq=\" + sclzrq +\n" +
-//                "                \", bzddbh='\" + bzddbh + '\\'' +\n" +
-//                "                \", qzzxyydm='\" + qzzxyydm + '\\'' +\n" +
-//                "                \", zxrq=\" + zxrq +\n" +
-//                "                \", zhycyxrq=\" + zhycyxrq +\n" +
-//                "                \", zzrq=\" + zzrq +\n" +
-//                "                \", djrq=\" + djrq +\n" +
-//                "                \", qzycbz='\" + qzycbz + '\\'' +\n" +
-//                "                \", qzh='\" + qzh + '\\'' +\n" +
-//                "                \", dzxph='\" + dzxph + '\\'' +\n" +
-//                "                \", qyyzid='\" + qyyzid + '\\'' +\n" +
-//                "                \", qzlyfs='\" + qzlyfs + '\\'' +\n" +
-//                "                \", aqcsdm='\" + aqcsdm + '\\'' +\n" +
-//                "                \", qytdm='\" + qytdm + '\\'' +\n" +
-//                "                \", qlydm='\" + qlydm + '\\'' +\n" +
-//                "                \", qdxdm='\" + qdxdm + '\\'' +\n" +
-//                "                \", qzms='\" + qzms + '\\'' +\n" +
-//                "                \", qzcsny='\" + qzcsny + '\\'' +\n" +
-//                "                \", qzdm='\" + qzdm + '\\'' +\n" +
-//                "                \", qxbdm='\" + qxbdm + '\\'' +\n" +
-//                "                \", qzmz='\" + qzmz + '\\'' +\n" +
-//                "                \", sqbh='\" + sqbh + '\\'' +\n" +
-//                "                \", pcsbh='\" + pcsbh + '\\'' +\n" +
-//                "                \", yxtbh='\" + yxtbh + '\\'' +\n" +
-//                "                \", qbh='\" + qbh + '\\'' +\n" +
-//                "                '}';\n" +
-//                "    }");
+        sb.append("@Override\n" +
+                "                    public String toString() {\n" +
+                "                       return \""+modelName+"{ +\" +");
+        for (Column column : columnList){
+            sb.append("                \", "+column.getColName()+"=\" + "+column.getColName()+" +\n");
+        }
+        sb.append("'}';\n");
+        sb.append("}");
     }
 
     private String initcap(String str) {
@@ -235,7 +254,15 @@ public class ModelGenerator {
         return new String(ch);
     }
 
+    private String oracleType(String colType){
+        if (colType.equalsIgnoreCase("timestamp"))
+            return "date";
+        return colType;
+    }
+
     private String sqlType2JavaType(String colType) {
+        colType = colType.replaceAll("\\(.*?\\)","");
+        System.out.println(colType);
 
         if (colType.equalsIgnoreCase("bit")) {
             return "Boolean";

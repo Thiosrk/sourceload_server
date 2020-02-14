@@ -1,8 +1,10 @@
 package com.csga.sourceload_server.Controller;
 
+import com.csga.sourceload_server.Model.Column;
 import com.csga.sourceload_server.Model.TaskInfo;
 import com.csga.sourceload_server.Model.TaskState;
 import com.csga.sourceload_server.Model.TaskType;
+import com.csga.sourceload_server.Service.ColumnService;
 import com.csga.sourceload_server.Service.TaskInfoService;
 import com.csga.sourceload_server.Utils.AsyncTask.AsyncTaskManager;
 import com.csga.sourceload_server.Utils.Data.DataDownloadUtils;
@@ -18,19 +20,31 @@ public class TaskInfoController {
 
     @Autowired
     TaskInfoService taskInfoService;
+    @Autowired
+    ColumnService columnService;
 
     @GetMapping("/list")
     public List<TaskInfo> list(){
         return taskInfoService.getAll();
     }
 
-    @GetMapping("")
+    @GetMapping("/timestampList/{tableName}")
+    public List<Column> getColumnList(@PathVariable("tableName") String tableName){
+        return columnService.getTimeStampColumns(tableName);
+    }
+
+    @GetMapping("/{id}")
+    public TaskInfo getOne(@PathVariable("id") Integer taskInfoId){
+        return taskInfoService.getTaskInfoById(taskInfoId);
+    }
+
+    @GetMapping("/create")
     public TaskInfo getTaskInfo(){
         return TaskInfo.builder()
                 .totalFromSource(0)
                 .totalInLocal(0)
                 .creatorId(0)
-                .tableSequence(1)
+//                .tableSequence(1)
                 .startPage(1)
                 .pageSize(1000)
                 .createTime(new Date())
